@@ -19,8 +19,8 @@ echo "Creating .env file..." >> /var/log/airflow-setup.log
 
 # Create temporary .env file with placeholder
 cat > .env << 'EOL'
-# MongoDB connection string
-export MONGODB_CONNECTION_URI="mongodb+srv://akhil:Akhil@1997@datasarva.m5jbp.mongodb.net/?retryWrites=true&w=majority&appName=datasarva"
+# MongoDB connection string (with properly encoded credentials)
+export MONGODB_CONNECTION_URI="mongodb+srv://akhil:Akhil%401997@datasarva.m5jbp.mongodb.net/?retryWrites=true&w=majority&appName=datasarva"
 
 # MongoDB database and collection
 export MONGODB_DATABASE="datasarva"
@@ -105,6 +105,29 @@ sudo pip install "boto3==1.28.44"
 sudo pip install "python-dotenv==1.0.0"
 sudo pip install "pyOpenSSL==23.2.0"
 sudo pip install "cryptography==41.0.3"
+
+# Add after Python packages installation and before Airflow setup
+echo "Testing MongoDB connection..." >> /var/log/airflow-setup.log
+python3 -c '
+import os
+import pymongo
+from dotenv import load_dotenv
+
+load_dotenv()
+
+uri = os.environ.get("MONGODB_CONNECTION_URI")
+try:
+    client = pymongo.MongoClient(uri)
+    client.admin.command("ping")
+    db = client[os.environ.get("MONGODB_DATABASE")]
+    collection = db[os.environ.get("MONGODB_COLLECTION")]
+    count = collection.count_documents({})
+    print(f"Successfully connected to MongoDB. Found {count} documents.")
+    client.close()
+except Exception as e:
+    print(f"Error connecting to MongoDB: {e}")
+    raise
+' >> /var/log/airflow-setup.log 2>&1
 
 # Set AIRFLOW_HOME and create necessary directories
 export AIRFLOW_HOME=/home/ubuntu/airflow

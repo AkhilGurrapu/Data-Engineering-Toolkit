@@ -55,7 +55,8 @@ def extract_load_task(**context):
         # Get execution date
         execution_date = context['execution_date'].strftime('%Y-%m-%d')
         
-        # Connect to MongoDB - URI is already encoded from .env file
+        # Connect to MongoDB
+        print(f"Attempting to connect to MongoDB with URI: {MONGODB_URI}")  # Add debug logging
         client = pymongo.MongoClient(MONGODB_URI)
         
         # Test the connection
@@ -65,8 +66,13 @@ def extract_load_task(**context):
         db = client[MONGODB_DB]
         collection = db[MONGODB_COLLECTION]
         
-        # Get data count
+        # Get data count and log it
         total_documents = collection.count_documents({})
+        print(f"Found {total_documents} documents in collection")
+        
+        if total_documents == 0:
+            print("Warning: No documents found in the collection")
+            return "No documents found to process"
         
         # S3 client
         s3_client = boto3.client('s3')
