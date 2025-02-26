@@ -48,22 +48,8 @@ def extract_load_task(**context):
         # Get execution date
         execution_date = context['execution_date'].strftime('%Y-%m-%d')
         
-        # Parse MongoDB URI and properly encode username and password
-        uri_parts = MONGODB_URI.split('://')
-        if len(uri_parts) == 2:
-            prefix = uri_parts[0]
-            rest = uri_parts[1]
-            if '@' in rest:
-                auth, host = rest.split('@', 1)
-                username, password = auth.split(':', 1)
-                encoded_uri = f"{prefix}://{quote_plus(username)}:{quote_plus(password)}@{host}"
-            else:
-                encoded_uri = MONGODB_URI
-        else:
-            encoded_uri = MONGODB_URI
-            
-        # Connect to MongoDB
-        client = pymongo.MongoClient(encoded_uri)
+        # Connect to MongoDB using the already-encoded URI
+        client = pymongo.MongoClient(MONGODB_URI)
         db = client[MONGODB_DB]
         collection = db[MONGODB_COLLECTION]
         
