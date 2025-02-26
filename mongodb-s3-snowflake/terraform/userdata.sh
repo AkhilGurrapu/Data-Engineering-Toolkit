@@ -14,11 +14,13 @@ cd /home/ubuntu
 git clone https://github.com/AkhilGurrapu/Data-Engineering-Toolkit.git
 cd Data-Engineering-Toolkit/mongodb-s3-snowflake
 
-# Create .env file with proper permissions and encoded MongoDB URI
+# Create .env file with proper permissions
 echo "Creating .env file..." >> /var/log/airflow-setup.log
+
+# Create temporary .env file with placeholder
 cat > .env << 'EOL'
-# MongoDB connection string (with encoded username and password)
-export MONGODB_CONNECTION_URI="mongodb+srv://akhil:$(python3 -c 'from urllib.parse import quote_plus; print(quote_plus("Akhil@1997"))')@datasarva.m5jbp.mongodb.net/?retryWrites=true&w=majority&appName=datasarva"
+# MongoDB connection string
+export MONGODB_CONNECTION_URI="mongodb+srv://akhil:Akhil@1997@datasarva.m5jbp.mongodb.net/?retryWrites=true&w=majority&appName=datasarva"
 
 # MongoDB database and collection
 export MONGODB_DATABASE="datasarva"
@@ -33,6 +35,23 @@ export S3_PREFIX="raw/sample_mflix/"
 export BATCH_SIZE=1000
 export EXTRACT_FREQUENCY="@daily"
 EOL
+
+# Now encode the MongoDB URI properly
+python3 -c '
+import os
+from urllib.parse import quote_plus
+with open(".env", "r") as f:
+    content = f.read()
+uri = content.split("MONGODB_CONNECTION_URI=")[1].split("\n")[0].strip(\'"\')
+username = uri.split("://")[1].split(":")[0]
+password = uri.split(":")[1].split("@")[0]
+encoded_username = quote_plus(username)
+encoded_password = quote_plus(password)
+new_uri = uri.replace(username, encoded_username).replace(password, encoded_password)
+content = content.replace(uri, new_uri)
+with open(".env", "w") as f:
+    f.write(content)
+'
 
 # Step 1: Update packages
 echo "Updating packages..." >> /var/log/airflow-setup.log

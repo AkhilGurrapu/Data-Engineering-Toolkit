@@ -48,8 +48,13 @@ def extract_load_task(**context):
         # Get execution date
         execution_date = context['execution_date'].strftime('%Y-%m-%d')
         
-        # Connect to MongoDB using the already-encoded URI
+        # Connect to MongoDB - URI is already encoded from .env file
         client = pymongo.MongoClient(MONGODB_URI)
+        
+        # Test the connection
+        client.admin.command('ping')
+        print("Successfully connected to MongoDB")
+        
         db = client[MONGODB_DB]
         collection = db[MONGODB_COLLECTION]
         
