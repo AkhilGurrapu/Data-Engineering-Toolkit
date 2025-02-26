@@ -6,6 +6,7 @@ import boto3
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from dotenv import load_dotenv
+from urllib.parse import quote_plus
 
 # Load environment variables from .env file
 load_dotenv()
@@ -47,8 +48,22 @@ def extract_load_task(**context):
         # Get execution date
         execution_date = context['execution_date'].strftime('%Y-%m-%d')
         
+        # Parse MongoDB URI and properly encode username and password
+        uri_parts = MONGODB_URI.split('://')
+        if len(uri_parts) == 2:
+            prefix = uri_parts[0]
+            rest = uri_parts[1]
+            if '@' in rest:
+                auth, host = rest.split('@', 1)
+                username, password = auth.split(':', 1)
+                encoded_uri = f"{prefix}://{quote_plus(username)}:{quote_plus(password)}@{host}"
+            else:
+                encoded_uri = MONGODB_URI
+        else:
+            encoded_uri = MONGODB_URI
+            
         # Connect to MongoDB
-        client = pymongo.MongoClient(MONGODB_URI)
+        client = pymongo.MongoClient(encoded_uri)
         db = client[MONGODB_DB]
         collection = db[MONGODB_COLLECTION]
         
@@ -89,8 +104,8 @@ def extract_load_task(**context):
         task_instance.xcom_push(key='total_batches', value=(total_documents // BATCH_SIZE) + 1)
         
         return f"Processed {total_documents} documents from MongoDB to S3"
-    except pymongo.errors.ConnectionError as e:
-        print(f"MongoDB connection error: {e}")
+    except pymongo.errors.PyMongoError as e:
+        print(f"MongoDB error: {e}")
         raise
     except boto3.exceptions.S3UploadFailedError as e:
         print(f"S3 upload error: {e}")
@@ -105,6 +120,5 @@ extract_load = PythonOperator(
     provide_context=True,
     dag=dag,
 )
-
 # Task dependencies (only one task for now)
 extract_load

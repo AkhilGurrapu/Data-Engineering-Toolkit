@@ -58,6 +58,9 @@ mkdir -p /home/ubuntu/airflow/dags
 cp dags/mongodb_to_s3_dag.py /home/ubuntu/airflow/dags/
 cp .env /home/ubuntu/airflow/
 
+# Update DAG start date to current year
+sed -i 's/datetime(2025, 2, 1)/datetime(2025, 2, 26)/' /home/ubuntu/airflow/dags/mongodb_to_s3_dag.py
+
 # Step 4: Configure Airflow
 echo "Initializing Airflow database..." >> /var/log/airflow-setup.log
 export AIRFLOW_HOME=/home/ubuntu/airflow
@@ -90,6 +93,8 @@ After=network.target
 User=ubuntu
 Group=ubuntu
 Type=simple
+Environment="AIRFLOW_HOME=/home/ubuntu/airflow"
+EnvironmentFile=/home/ubuntu/airflow/.env
 ExecStart=/usr/local/bin/airflow webserver
 Restart=on-failure
 RestartSec=5s
@@ -109,6 +114,8 @@ After=network.target
 User=ubuntu
 Group=ubuntu
 Type=simple
+Environment="AIRFLOW_HOME=/home/ubuntu/airflow"
+EnvironmentFile=/home/ubuntu/airflow/.env
 ExecStart=/usr/local/bin/airflow scheduler
 Restart=on-failure
 RestartSec=5s
@@ -139,3 +146,8 @@ echo "Username: admin" >> /var/log/airflow-setup.log
 echo "Password: airflow" >> /var/log/airflow-setup.log
 
 # Don't forget to update the security group to allow traffic on port 8080
+
+# Set proper permissions for all Airflow files
+chmod -R 775 /home/ubuntu/airflow
+chmod 644 /home/ubuntu/airflow/dags/*.py
+chmod 644 /home/ubuntu/airflow/.env
