@@ -80,6 +80,7 @@ resource "aws_instance" "airflow_instance" {
   key_name              = aws_key_pair.airflow_key_pair.key_name
   
   user_data = filebase64("${path.module}/userdata.sh")
+  iam_instance_profile = aws_iam_instance_profile.airflow_profile.name
   
   tags = {
     Name = "airflow-instance"
@@ -138,8 +139,8 @@ resource "aws_iam_policy" "s3_access" {
         ]
         Effect   = "Allow"
         Resource = [
-          "arn:aws:s3:::${aws_s3_bucket.mongodb_data_lake.id}",
-          "arn:aws:s3:::${aws_s3_bucket.mongodb_data_lake.id}/*"
+          "arn:aws:s3:::${var.s3_bucket_name}",
+          "arn:aws:s3:::${var.s3_bucket_name}/*"
         ]
       }
     ]
