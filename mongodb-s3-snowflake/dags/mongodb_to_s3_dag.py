@@ -6,20 +6,12 @@ import boto3
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from dotenv import load_dotenv
-from urllib.parse import quote_plus
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Create MongoDB URI with properly encoded username and password
-username = "akhil"
-password = "Akhil@1997"
-host = "datasarva.m5jbp.mongodb.net"
-encoded_username = quote_plus(username)
-encoded_password = quote_plus(password)
-MONGODB_URI = f"mongodb+srv://{encoded_username}:{encoded_password}@{host}/?retryWrites=true&w=majority&appName=datasarva"
-
-# Get other environment variables
+# Get environment variables
+MONGODB_URI = os.environ.get('MONGODB_CONNECTION_URI')
 MONGODB_DB = os.environ.get('MONGODB_DATABASE')
 MONGODB_COLLECTION = os.environ.get('MONGODB_COLLECTION')
 S3_BUCKET = os.environ.get('S3_BUCKET')
@@ -55,13 +47,8 @@ def extract_load_task(**context):
         # Get execution date
         execution_date = context['execution_date'].strftime('%Y-%m-%d')
         
-        # Connect to MongoDB - URI is already encoded from .env file
+        # Connect to MongoDB
         client = pymongo.MongoClient(MONGODB_URI)
-        
-        # Test the connection
-        client.admin.command('ping')
-        print("Successfully connected to MongoDB")
-        
         db = client[MONGODB_DB]
         collection = db[MONGODB_COLLECTION]
         
@@ -102,8 +89,8 @@ def extract_load_task(**context):
         task_instance.xcom_push(key='total_batches', value=(total_documents // BATCH_SIZE) + 1)
         
         return f"Processed {total_documents} documents from MongoDB to S3"
-    except pymongo.errors.PyMongoError as e:
-        print(f"MongoDB error: {e}")
+    except pymongo.errors.ConnectionError as e:
+        print(f"MongoDB connection error: {e}")
         raise
     except boto3.exceptions.S3UploadFailedError as e:
         print(f"S3 upload error: {e}")
@@ -118,5 +105,6 @@ extract_load = PythonOperator(
     provide_context=True,
     dag=dag,
 )
+
 # Task dependencies (only one task for now)
 extract_load
