@@ -11,24 +11,13 @@ from urllib.parse import quote_plus
 # Load environment variables from .env file
 load_dotenv()
 
-# Get environment variables and encode MongoDB URI
-raw_uri = os.environ.get('MONGODB_CONNECTION_URI')
-# Parse and encode the MongoDB URI
-parts = raw_uri.split("mongodb+srv://", 1)
-if len(parts) == 2:
-    creds_host = parts[1].split("@", 1)
-    if len(creds_host) == 2:
-        user_pass = creds_host[0].split(":", 1)
-        if len(user_pass) == 2:
-            encoded_user = quote_plus(user_pass[0])
-            encoded_pass = quote_plus(user_pass[1])
-            MONGODB_URI = f"mongodb+srv://{encoded_user}:{encoded_pass}@{creds_host[1]}"
-        else:
-            MONGODB_URI = raw_uri
-    else:
-        MONGODB_URI = raw_uri
-else:
-    MONGODB_URI = raw_uri
+# Create MongoDB URI with properly encoded username and password
+username = "akhil"
+password = "Akhil@1997"
+host = "datasarva.m5jbp.mongodb.net"
+encoded_username = quote_plus(username)
+encoded_password = quote_plus(password)
+MONGODB_URI = f"mongodb+srv://{encoded_username}:{encoded_password}@{host}/?retryWrites=true&w=majority&appName=datasarva"
 
 # Get other environment variables
 MONGODB_DB = os.environ.get('MONGODB_DATABASE')
