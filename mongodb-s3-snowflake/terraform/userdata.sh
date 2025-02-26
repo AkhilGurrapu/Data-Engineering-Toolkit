@@ -12,7 +12,7 @@ sudo apt-get install git -y
 echo "Cloning repository..." >> /var/log/airflow-setup.log
 cd /home/ubuntu
 git clone https://github.com/AkhilGurrapu/Data-Engineering-Toolkit.git
-cd Data-Engineering-Toolkit/airflow-on-ec2
+cd Data-Engineering-Toolkit/mongodb-s3-snowflake
 
 # Create .env file
 echo "Creating .env file..." >> /var/log/airflow-setup.log
