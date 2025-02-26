@@ -20,8 +20,8 @@ encoded_password = quote_plus(password)
 MONGODB_URI = f"mongodb+srv://{encoded_username}:{encoded_password}@{host}/?retryWrites=true&w=majority&appName=datasarva"
 
 # Get other environment variables
-MONGODB_DB = os.environ.get('MONGODB_DATABASE')
-MONGODB_COLLECTION = os.environ.get('MONGODB_COLLECTION')
+MONGODB_DB = "sample_mflix"  # This is correct
+COLLECTIONS = ["comments", "movies", "theaters", "users", "sessions", "embedded_movies"]  # All collections
 S3_BUCKET = os.environ.get('S3_BUCKET')
 S3_PREFIX = os.environ.get('S3_PREFIX')
 BATCH_SIZE = int(os.environ.get('BATCH_SIZE', 1000))
@@ -56,7 +56,7 @@ def extract_load_task(**context):
         execution_date = context['execution_date'].strftime('%Y-%m-%d')
         
         # Connect to MongoDB
-        print(f"Attempting to connect to MongoDB with URI: {MONGODB_URI}")  # Add debug logging
+        print(f"Connecting to database: {MONGODB_DB}")
         client = pymongo.MongoClient(MONGODB_URI)
         
         # Test the connection
@@ -64,50 +64,62 @@ def extract_load_task(**context):
         print("Successfully connected to MongoDB")
         
         db = client[MONGODB_DB]
-        collection = db[MONGODB_COLLECTION]
+        available_collections = db.list_collection_names()
+        print("Available collections:", available_collections)
         
-        # Get data count and log it
-        total_documents = collection.count_documents({})
-        print(f"Found {total_documents} documents in collection")
+        total_processed = 0
         
-        if total_documents == 0:
-            print("Warning: No documents found in the collection")
-            return "No documents found to process"
-        
-        # S3 client
-        s3_client = boto3.client('s3')
-        
-        # Process in batches
-        for skip in range(0, total_documents, BATCH_SIZE):
-            batch_num = skip // BATCH_SIZE
-            documents = list(collection.find().skip(skip).limit(BATCH_SIZE))
+        # Process each collection
+        for collection_name in COLLECTIONS:
+            if collection_name not in available_collections:
+                print(f"Warning: Collection {collection_name} not found in database")
+                continue
+                
+            print(f"Processing collection: {collection_name}")
+            collection = db[collection_name]
             
-            # Convert MongoDB documents to JSON
-            json_data = []
-            for doc in documents:
-                # Convert ObjectId to string
-                doc['_id'] = str(doc['_id'])
-                json_data.append(doc)
+            # Get data count and log it
+            total_documents = collection.count_documents({})
+            print(f"Found {total_documents} documents in collection {collection_name}")
             
-            # Save to S3
-            s3_key = f"{S3_PREFIX}{MONGODB_COLLECTION}/{execution_date}/batch_{batch_num}.json"
-            s3_client.put_object(
-                Bucket=S3_BUCKET,
-                Key=s3_key,
-                Body=json.dumps(json_data, default=str),
-                ContentType='application/json'
-            )
+            if total_documents == 0:
+                print(f"Warning: No documents found in collection {collection_name}")
+                continue
             
-            print(f"Uploaded batch {batch_num} to S3: s3://{S3_BUCKET}/{s3_key}")
+            # Process in batches
+            for skip in range(0, total_documents, BATCH_SIZE):
+                batch_num = skip // BATCH_SIZE
+                documents = list(collection.find().skip(skip).limit(BATCH_SIZE))
+                
+                # Convert MongoDB documents to JSON
+                json_data = []
+                for doc in documents:
+                    # Convert ObjectId to string
+                    doc['_id'] = str(doc['_id'])
+                    json_data.append(doc)
+                
+                # Save to S3
+                s3_key = f"{S3_PREFIX}{collection_name}/{execution_date}/batch_{batch_num}.json"
+                s3_client = boto3.client('s3')
+                s3_client.put_object(
+                    Bucket=S3_BUCKET,
+                    Key=s3_key,
+                    Body=json.dumps(json_data, default=str),
+                    ContentType='application/json'
+                )
+                
+                print(f"Uploaded batch {batch_num} to S3: s3://{S3_BUCKET}/{s3_key}")
+            
+            total_processed += total_documents
+            print(f"Completed processing collection {collection_name}")
         
         # Close MongoDB connection
         client.close()
         
         # Log processing metrics
-        task_instance.xcom_push(key='total_documents', value=total_documents)
-        task_instance.xcom_push(key='total_batches', value=(total_documents // BATCH_SIZE) + 1)
+        task_instance.xcom_push(key='total_documents', value=total_processed)
         
-        return f"Processed {total_documents} documents from MongoDB to S3"
+        return f"Processed {total_processed} documents from {len(COLLECTIONS)} collections to S3"
     except pymongo.errors.PyMongoError as e:
         print(f"MongoDB error: {e}")
         raise

@@ -23,8 +23,8 @@ cat > .env << 'EOL'
 export MONGODB_CONNECTION_URI="mongodb+srv://akhil:Akhil%401997@datasarva.m5jbp.mongodb.net/?retryWrites=true&w=majority&appName=datasarva"
 
 # MongoDB database and collection
-export MONGODB_DATABASE="datasarva"
-export MONGODB_COLLECTION="sample_mflix"
+export MONGODB_DATABASE="sample_mflix"
+# No need for MONGODB_COLLECTION anymore as we're processing all collections
 
 # AWS Configuration
 export AWS_REGION="us-west-2"
