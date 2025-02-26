@@ -36,21 +36,56 @@ export BATCH_SIZE=1000
 export EXTRACT_FREQUENCY="@daily"
 EOL
 
-# Now encode the MongoDB URI properly
+# Now encode the MongoDB URI properly using a more robust Python script
 python3 -c '
 import os
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlparse, urlunparse
+
+def encode_mongodb_uri(uri):
+    # Parse the URI
+    parts = uri.split("mongodb+srv://", 1)
+    if len(parts) != 2:
+        return uri
+    
+    # Split credentials and host
+    creds_host = parts[1].split("@", 1)
+    if len(creds_host) != 2:
+        return uri
+    
+    # Split username and password
+    user_pass = creds_host[0].split(":", 1)
+    if len(user_pass) != 2:
+        return uri
+    
+    # Encode username and password
+    encoded_user = quote_plus(user_pass[0])
+    encoded_pass = quote_plus(user_pass[1])
+    
+    # Reconstruct the URI
+    return f"mongodb+srv://{encoded_user}:{encoded_pass}@{creds_host[1]}"
+
+# Read the current .env file
 with open(".env", "r") as f:
     content = f.read()
-uri = content.split("MONGODB_CONNECTION_URI=")[1].split("\n")[0].strip(\'"\')
-username = uri.split("://")[1].split(":")[0]
-password = uri.split(":")[1].split("@")[0]
-encoded_username = quote_plus(username)
-encoded_password = quote_plus(password)
-new_uri = uri.replace(username, encoded_username).replace(password, encoded_password)
-content = content.replace(uri, new_uri)
+
+# Find the MongoDB URI line
+for line in content.split("\n"):
+    if "MONGODB_CONNECTION_URI" in line:
+        uri_line = line
+        break
+
+# Extract the URI
+uri = uri_line.split("=")[1].strip().strip(\'"\')
+
+# Encode the URI
+encoded_uri = encode_mongodb_uri(uri)
+
+# Replace the old URI with the encoded one
+new_content = content.replace(uri, encoded_uri)
+
+# Write back to .env
 with open(".env", "w") as f:
-    f.write(content)
+    f.write(new_content)
 '
 
 # Step 1: Update packages
