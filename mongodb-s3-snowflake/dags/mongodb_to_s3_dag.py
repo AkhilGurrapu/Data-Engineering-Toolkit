@@ -11,8 +11,26 @@ from urllib.parse import quote_plus
 # Load environment variables from .env file
 load_dotenv()
 
-# Get environment variables
-MONGODB_URI = os.environ.get('MONGODB_CONNECTION_URI')
+# Get environment variables and encode MongoDB URI
+raw_uri = os.environ.get('MONGODB_CONNECTION_URI')
+# Parse and encode the MongoDB URI
+parts = raw_uri.split("mongodb+srv://", 1)
+if len(parts) == 2:
+    creds_host = parts[1].split("@", 1)
+    if len(creds_host) == 2:
+        user_pass = creds_host[0].split(":", 1)
+        if len(user_pass) == 2:
+            encoded_user = quote_plus(user_pass[0])
+            encoded_pass = quote_plus(user_pass[1])
+            MONGODB_URI = f"mongodb+srv://{encoded_user}:{encoded_pass}@{creds_host[1]}"
+        else:
+            MONGODB_URI = raw_uri
+    else:
+        MONGODB_URI = raw_uri
+else:
+    MONGODB_URI = raw_uri
+
+# Get other environment variables
 MONGODB_DB = os.environ.get('MONGODB_DATABASE')
 MONGODB_COLLECTION = os.environ.get('MONGODB_COLLECTION')
 S3_BUCKET = os.environ.get('S3_BUCKET')
