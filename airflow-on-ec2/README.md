@@ -1,6 +1,6 @@
 # Airflow Terraform AWS
 
-This project provides a simple example of how to deploy an Apache Airflow environment on AWS using Terraform.
+This project provides a simple example of how to deploy an Apache Airflow environment on AWS EC2 instanceusing Terraform.
 
 ## Prerequisites
 
@@ -20,7 +20,7 @@ Follow these steps to set up the Airflow environment:
 
 2. **Navigate to the Airflow Terraform AWS Directory**
    ```bash
-   cd airflow-terraform-aws
+   cd airflow-on-ec2
    ```
 
 3. **Configure AWS Credentials**
