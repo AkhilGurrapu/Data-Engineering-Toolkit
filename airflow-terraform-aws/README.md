@@ -58,7 +58,7 @@ Follow these steps to set up the Airflow environment:
 
    To access public IP address of your EC2 instance is:
    ```
-   `terraform output instance_public_ip`
+   terraform output instance_public_ip
    ```
    The default username is `admin` and the password is `airflow`.
 
