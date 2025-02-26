@@ -7,6 +7,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from dotenv import load_dotenv
 from urllib.parse import quote_plus
+from botocore.config import Config
 
 # Load environment variables from .env file
 load_dotenv()
@@ -69,6 +70,19 @@ def extract_load_task(**context):
         
         total_processed = 0
         
+        # Configure boto3 to use IMDSv2
+        my_config = Config(
+            region_name = os.environ.get('AWS_DEFAULT_REGION', 'us-west-2'),
+            retries = dict(
+                max_attempts = 2
+            )
+        )
+        
+        s3_client = boto3.client(
+            's3',
+            config=my_config
+        )
+        
         # Process each collection
         for collection_name in COLLECTIONS:
             if collection_name not in available_collections:
@@ -100,7 +114,6 @@ def extract_load_task(**context):
                 
                 # Save to S3
                 s3_key = f"{S3_PREFIX}{collection_name}/{execution_date}/batch_{batch_num}.json"
-                s3_client = boto3.client('s3')
                 s3_client.put_object(
                     Bucket=S3_BUCKET,
                     Key=s3_key,

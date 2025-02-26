@@ -163,9 +163,19 @@ sudo -u ubuntu AIRFLOW_HOME=${AIRFLOW_HOME} airflow users create \
     --email admin@example.com \
     --password airflow
 
-# Create systemd service files
+# Add this after creating .env file and before starting Airflow services
+echo "Setting up AWS configuration..." >> /var/log/airflow-setup.log
+
+# Add AWS region to environment
+cat >> /home/ubuntu/airflow/.env << EOL
+
+# AWS Configuration
+export AWS_DEFAULT_REGION=us-west-2
+EOL
+
+# Create systemd service files with AWS configuration
 echo "Creating service files..." >> /var/log/airflow-setup.log
-cat > /etc/systemd/system/airflow-webserver.service << 'EOL'
+cat > /etc/systemd/system/airflow-webserver.service << EOL
 [Unit]
 Description=Airflow webserver
 After=network.target
@@ -175,6 +185,7 @@ User=ubuntu
 Group=ubuntu
 Type=simple
 Environment="AIRFLOW_HOME=/home/ubuntu/airflow"
+Environment="AWS_DEFAULT_REGION=us-west-2"
 EnvironmentFile=/home/ubuntu/airflow/.env
 ExecStart=/usr/local/bin/airflow webserver
 Restart=always
@@ -184,7 +195,7 @@ RestartSec=5s
 WantedBy=multi-user.target
 EOL
 
-cat > /etc/systemd/system/airflow-scheduler.service << 'EOL'
+cat > /etc/systemd/system/airflow-scheduler.service << EOL
 [Unit]
 Description=Airflow scheduler
 After=network.target
@@ -194,6 +205,7 @@ User=ubuntu
 Group=ubuntu
 Type=simple
 Environment="AIRFLOW_HOME=/home/ubuntu/airflow"
+Environment="AWS_DEFAULT_REGION=us-west-2"
 EnvironmentFile=/home/ubuntu/airflow/.env
 ExecStart=/usr/local/bin/airflow scheduler
 Restart=always

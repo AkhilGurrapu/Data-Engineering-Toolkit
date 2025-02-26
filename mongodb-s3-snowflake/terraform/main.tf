@@ -120,6 +120,23 @@ resource "aws_iam_role" "airflow_ec2_role" {
       }
     ]
   })
+
+  # Add inline policy for EC2 describe instances
+  inline_policy {
+    name = "ec2-describe"
+    policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Effect = "Allow"
+          Action = [
+            "ec2:DescribeInstances"
+          ]
+          Resource = "*"
+        }
+      ]
+    })
+  }
 }
 
 # IAM Policy for S3 Access
@@ -131,13 +148,15 @@ resource "aws_iam_policy" "s3_access" {
     Version = "2012-10-17"
     Statement = [
       {
+        Effect = "Allow"
         Action = [
           "s3:PutObject",
           "s3:GetObject",
           "s3:DeleteObject",
-          "s3:ListBucket"
+          "s3:ListBucket",
+          "s3:GetBucketLocation",
+          "s3:ListAllMyBuckets"
         ]
-        Effect   = "Allow"
         Resource = [
           "arn:aws:s3:::${var.s3_bucket_name}",
           "arn:aws:s3:::${var.s3_bucket_name}/*"
