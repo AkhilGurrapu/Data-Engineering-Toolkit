@@ -42,20 +42,15 @@ sudo apt-get update -y
 echo "Installing Python3 package manager..." >> /var/log/airflow-setup.log
 sudo apt install python3-pip -y
 
-# Install Apache Airflow
-echo "Installing Apache Airflow..." >> /var/log/airflow-setup.log
-sudo pip install apache-airflow
-
-# Install Amazon provider for Apache Airflow
-echo "Installing Amazon provider for Apache Airflow..." >> /var/log/airflow-setup.log
-sudo pip install apache-airflow-providers-amazon
-
-# Install required Python packages for MongoDB DAG
-echo "Installing additional dependencies..." >> /var/log/airflow-setup.log
-sudo pip install pymongo boto3
-
-# Install python-dotenv for environment variables
-sudo pip install python-dotenv
+# Install Python packages with specific versions
+echo "Installing Python packages with specific versions..." >> /var/log/airflow-setup.log
+sudo pip install --upgrade pip
+sudo pip install "apache-airflow==2.7.1"
+sudo pip install "pymongo==4.5.0"
+sudo pip install "boto3==1.28.44"
+sudo pip install "python-dotenv==1.0.0"
+sudo pip install "pyOpenSSL==23.2.0"
+sudo pip install "cryptography==41.0.3"
 
 # Step 3: Create DAGs directory and copy DAG file
 echo "Creating DAGs directory and copying DAG file..." >> /var/log/airflow-setup.log
