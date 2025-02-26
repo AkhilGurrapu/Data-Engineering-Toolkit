@@ -1,6 +1,6 @@
 # Airflow Terraform AWS
 
-This project provides a simple example of how to deploy an Apache Airflow environment on AWS EC2 instanceusing Terraform.
+This project provides a simple example of how to deploy an Apache Airflow environment on AWS EC2 instance using Terraform.
 
 ## Prerequisites
 
